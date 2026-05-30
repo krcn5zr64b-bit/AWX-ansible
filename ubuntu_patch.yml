@@ -1,0 +1,103 @@
+---
+- name: Set logfile for Ubuntu
+  set_fact:
+    logfile: "{{ log_dir }}/patch_{{ inventory_hostname }}_ubuntu.log"
+  delegate_to: localhost
+
+- name: Update apt cache on Ubuntu
+  apt:
+    update_cache: yes
+  become: yes
+
+- name: Ensure unattended-upgrades is installed
+  apt:
+    name: unattended-upgrades
+    state: present
+    update_cache: yes
+  become: yes
+
+# -------------------------
+# PATCHING SECTION
+# -------------------------
+
+- name: Run security upgrade on Ubuntu
+  shell: unattended-upgrade -d
+  when: (patch_type | default('')) | lower == 'security'
+  register: patch_output_security
+  ignore_errors: yes
+
+- name: Run full upgrade on Ubuntu
+  shell: apt update -y && apt upgrade -y
+  when: (patch_type | default('')) | lower == 'full'
+  register: patch_output_full
+  ignore_errors: yes
+
+# -------------------------
+# REBOOT CHECK
+# -------------------------
+
+- name: Check if reboot is required (Ubuntu/Debian)
+  stat:
+    path: /var/run/reboot-required
+  register: reboot_required_file
+
+- name: Set reboot flag
+  set_fact:
+    reboot_required: "{{ reboot_required_file.stat.exists | default(false) }}"
+
+# -------------------------
+# BUILD LOG CONTENT
+# -------------------------
+
+- name: Write Ubuntu patch output to logfile on control node
+  copy:
+    content: |
+      ================================
+      PATCH REPORT - {{ inventory_hostname }}
+      ================================
+
+      OS: Ubuntu
+      Patch type: {{ patch_type | default('N/A') }}
+
+      -------------------------------
+      PATCH OUTPUT
+      -------------------------------
+
+      {% if (patch_type | default('') | lower) == 'security' %}
+      {{ patch_output_security.stdout | default('No security upgrade output captured') }}
+      {% elif (patch_type | default('') | lower) == 'full' %}
+      {{ patch_output_full.stdout | default('No full upgrade output captured') }}
+      {% else %}
+      No patch output captured (unknown patch type)
+      {% endif %}
+
+      -------------------------------
+      REBOOT STATUS
+      -------------------------------
+
+      Reboot required: {{ reboot_required }}
+
+    dest: "{{ logfile }}"
+  delegate_to: localhost
+
+# -------------------------
+# DEBUG (OPTIONAL BUT USEFUL)
+# -------------------------
+
+- name: Show reboot status
+  debug:
+    msg: "Reboot required = {{ reboot_required }} for {{ inventory_hostname }}"
+
+# -------------------------
+# EMAIL REPORT
+# -------------------------
+
+- name: Send patch report via email (Ubuntu)
+  ansible.builtin.mail:
+    host: localhost
+    port: 25
+    to: nico.zanjani@fujitsu.com
+    subject: "Patching report for {{ inventory_hostname }} - {{ patch_type | default('N/A') }}"
+    body: "{{ lookup('file', logfile) }}"
+    from: ansible@ansibleserver.frontedge.net
+  delegate_to: localhost

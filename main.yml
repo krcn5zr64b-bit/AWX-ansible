@@ -1,0 +1,106 @@
+---
+- name: Main Patching Playbook
+  hosts: all
+  become: yes
+  gather_facts: yes
+
+  vars:
+    log_dir: "/var/log/ansible/patching"
+
+  # -------------------------
+  # PRE TASKS
+  # -------------------------
+  pre_tasks:
+    - name: Ensure log directory exists on control node
+      file:
+        path: "{{ log_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+      delegate_to: localhost
+      become: yes
+      become_method: sudo
+      become_user: root
+      connection: local
+      run_once: true
+
+  # -------------------------
+  # MAIN TASKS
+  # -------------------------
+  tasks:
+
+    - name: Include Ubuntu patch playbook
+      include_tasks: ubuntu_patch.yml
+      when: ansible_facts['os_family'] == 'Debian'
+
+    - name: Include Oracle Linux patch playbook
+      include_tasks: oracle_patch.yml
+      when: ansible_facts['os_family'] == 'RedHat'
+            and ansible_facts['distribution'] == 'OracleLinux'
+
+    - name: Include RedHat-like patch playbook
+      include_tasks: redhat_patch.yml
+      when: ansible_facts['os_family'] == 'RedHat'
+            and ansible_facts['distribution'] not in ['OracleLinux']
+
+    - name: Include SLES patch playbook
+      include_tasks: sles_patch.yml
+      when: ansible_facts['os_family'] == 'Suse'
+
+    # -------------------------
+    # REBOOT HANDLING (NEW)
+    # -------------------------
+
+    - name: Show reboot decision
+      debug:
+        msg: "Host {{ inventory_hostname }} reboot_required = {{ reboot_required | default(false) }}"
+
+    - name: Reboot server if required
+      reboot:
+        msg: "Reboot initiated by Ansible after patching"
+        connect_timeout: 10
+        reboot_timeout: 1800
+      when: reboot_required | default(false)
+
+  # -------------------------
+  # POST TASKS
+  # -------------------------
+  post_tasks:
+
+    - name: Set OS type
+      set_fact:
+        os_type: >-
+          {% if ansible_facts['os_family'] == 'Debian' %}
+          ubuntu
+          {% elif ansible_facts['os_family'] == 'RedHat' and ansible_facts['distribution'] == 'OracleLinux' %}
+          oracle
+          {% elif ansible_facts['os_family'] == 'RedHat' and ansible_facts['distribution'] in ['RedHat','Rocky','AlmaLinux'] %}
+          redhat
+          {% elif ansible_facts['os_family'] == 'Suse' %}
+          sles
+          {% else %}
+          unknown
+          {% endif %}
+
+    - name: Set logfile path
+      set_fact:
+        logfile: "{{ log_dir }}/patch_{{ inventory_hostname }}_{{ os_type }}.log"
+
+    - name: Check if logfile exists
+      stat:
+        path: "{{ logfile }}"
+      register: logfile_stat
+
+    - name: Send patch report via sendmail
+      shell: |
+        if [ -f "{{ logfile }}" ]; then
+          (
+            echo "To: nico.zanjani@fujitsu.com"
+            echo "Subject: Patching report for {{ inventory_hostname }} - {{ patch_type | default('N/A') }}"
+            echo "From: ansible@ansibleserver.frontedge.net"
+            echo
+            cat "{{ logfile }}"
+          ) | /usr/sbin/sendmail -t
+      delegate_to: localhost
+      when: logfile_stat.stat.exists

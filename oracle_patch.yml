@@ -1,0 +1,119 @@
+---
+- name: Set logfile for Oracle Linux
+  set_fact:
+    logfile: "{{ log_dir }}/patch_{{ inventory_hostname }}_oracle.log"
+  delegate_to: localhost
+
+# -------------------------
+# PREPARATION
+# -------------------------
+
+- name: Ensure yum-utils is installed
+  yum:
+    name: yum-utils
+    state: present
+  become: yes
+
+# -------------------------
+# PATCHING
+# -------------------------
+
+- name: Run security update on Oracle Linux
+  shell: yum update --security -y
+  when: (patch_type | default('') | lower) == 'security'
+  register: patch_output_security
+  ignore_errors: yes
+
+- name: Run full update on Oracle Linux
+  shell: yum update -y
+  when: (patch_type | default('') | lower) != 'security'
+  register: patch_output_full
+  ignore_errors: yes
+
+# -------------------------
+# REBOOT CHECK (RHEL STYLE)
+# -------------------------
+
+- name: Check if reboot is required (Oracle Linux)
+  command: needs-restarting -r
+  register: reboot_check
+  failed_when: false
+  changed_when: false
+
+- name: Set reboot flag
+  set_fact:
+    reboot_required: "{{ reboot_check.rc != 0 }}"
+
+- name: Get reboot reason (if any)
+  command: needs-restarting -s
+  register: reboot_reason_cmd
+  when: reboot_required
+  failed_when: false
+  changed_when: false
+
+- name: Set reboot reason fact
+  set_fact:
+    reboot_reason: "{{ reboot_reason_cmd.stdout | default('No reboot details available') }}"
+  when: reboot_required
+
+# -------------------------
+# LOG FILE
+# -------------------------
+
+- name: Write Oracle patch output to logfile on control node
+  copy:
+    content: |
+      ================================
+      PATCH REPORT - {{ inventory_hostname }}
+      ================================
+
+      OS: Oracle Linux
+      Patch type: {{ patch_type | default('N/A') }}
+
+      -------------------------------
+      PATCH OUTPUT
+      -------------------------------
+
+      {% if (patch_type | default('') | lower) == 'security' %}
+      {{ patch_output_security.stdout | default('No security upgrade output captured') }}
+      {% else %}
+      {{ patch_output_full.stdout | default('No full upgrade output captured') }}
+      {% endif %}
+
+      -------------------------------
+      REBOOT STATUS
+      -------------------------------
+
+      Reboot required: {{ reboot_required }}
+
+      {% if reboot_required %}
+      -------------------------------
+      REBOOT REASON
+      -------------------------------
+      {{ reboot_reason }}
+      {% endif %}
+
+    dest: "{{ logfile }}"
+  delegate_to: localhost
+
+# -------------------------
+# DEBUG (OPTIONAL)
+# -------------------------
+
+- name: Show reboot status
+  debug:
+    msg: "Reboot required = {{ reboot_required }} for {{ inventory_hostname }}"
+
+# -------------------------
+# EMAIL REPORT
+# -------------------------
+
+- name: Send patch report via email (Oracle Linux)
+  ansible.builtin.mail:
+    host: localhost
+    port: 25
+    to: nico.zanjani@fujitsu.com
+    subject: "Patching report for {{ inventory_hostname }} - {{ patch_type | default('N/A') }}"
+    body: "{{ lookup('file', logfile) }}"
+    from: ansible@ansibleserver.frontedge.net
+  delegate_to: localhost

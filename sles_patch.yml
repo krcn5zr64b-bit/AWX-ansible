@@ -1,0 +1,102 @@
+---
+- name: Set logfile for SLES
+  set_fact:
+    logfile: "{{ log_dir }}/patch_{{ inventory_hostname }}_sles.log"
+  delegate_to: localhost
+
+# -------------------------
+# PATCHING
+# -------------------------
+
+- name: Run security update on SLES
+  shell: zypper patch --with-update --type patch -y
+  when: (patch_type | default('') | lower) == 'security'
+  register: patch_output_security
+  ignore_errors: yes
+
+- name: Run full update on SLES
+  shell: zypper update -y
+  when: (patch_type | default('') | lower) != 'security'
+  register: patch_output_full
+  ignore_errors: yes
+
+# -------------------------
+# REBOOT CHECK (SLES STANDARD)
+# -------------------------
+
+- name: Check if reboot is required (SLES)
+  command: zypper ps -s
+  register: reboot_check
+  failed_when: false
+  changed_when: false
+
+- name: Set reboot flag
+  set_fact:
+    reboot_required: "{{ reboot_check.stdout | length > 0 }}"
+
+- name: Set reboot reason
+  set_fact:
+    reboot_reason: "{{ reboot_check.stdout | default('No reboot required') }}"
+  when: reboot_required
+
+# -------------------------
+# LOG FILE
+# -------------------------
+
+- name: Write SLES patch output to logfile on control node
+  copy:
+    content: |
+      ================================
+      PATCH REPORT - {{ inventory_hostname }}
+      ================================
+
+      OS: SLES
+      Patch type: {{ patch_type | default('N/A') }}
+
+      -------------------------------
+      PATCH OUTPUT
+      -------------------------------
+
+      {% if (patch_type | default('') | lower) == 'security' %}
+      {{ patch_output_security.stdout | default('No security upgrade output captured') }}
+      {% else %}
+      {{ patch_output_full.stdout | default('No full upgrade output captured') }}
+      {% endif %}
+
+      -------------------------------
+      REBOOT STATUS
+      -------------------------------
+
+      Reboot required: {{ reboot_required }}
+
+      {% if reboot_required %}
+      -------------------------------
+      REBOOT REASON
+      -------------------------------
+      {{ reboot_reason }}
+      {% endif %}
+
+    dest: "{{ logfile }}"
+  delegate_to: localhost
+
+# -------------------------
+# DEBUG (OPTIONAL)
+# -------------------------
+
+- name: Show reboot status
+  debug:
+    msg: "Reboot required = {{ reboot_required }} for {{ inventory_hostname }}"
+
+# -------------------------
+# EMAIL REPORT
+# -------------------------
+
+- name: Send patch report via email (SLES)
+  ansible.builtin.mail:
+    host: localhost
+    port: 25
+    to: nico.zanjani@fujitsu.com
+    subject: "Patching report for {{ inventory_hostname }} - {{ patch_type | default('N/A') }}"
+    body: "{{ lookup('file', logfile) }}"
+    from: ansible@ansibleserver.frontedge.net
+  delegate_to: localhost
