@@ -1,0 +1,10 @@
+ansible_user: ansible
+ansible_become: true
+ansible_become_method: sudo
+ansible_python_interpreter: /usr/bin/python3
+
+# Default schedule (fallback)
+patch_day: Sun
+patch_time: "02:00"
+reboot_day: Sun
+reboot_time: "03:00"
