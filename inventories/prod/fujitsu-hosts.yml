@@ -7,9 +7,6 @@ all:
       hosts:
         sea0020sdp01.frontedge.net:
           ansible_host: sea0020sdp01.frontedge.net
-          patch_day: Mon
-          patch_time: "01:00"
-          reboot_time: "02:00"
 
     oracle_repository:
       hosts:

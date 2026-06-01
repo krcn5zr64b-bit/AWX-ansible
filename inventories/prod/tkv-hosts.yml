@@ -7,9 +7,6 @@ all:
       hosts:
         broxpubunrepo01.tvdomain.local:
           ansible_host: broxpubunrepo01.tvdomain.local
-          patch_day: Mon
-          patch_time: "01:00"
-          reboot_time: "02:00"
 
     suse_repository:
       hosts:
