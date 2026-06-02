@@ -1,0 +1,19 @@
+all:
+  hosts:
+
+  children:
+
+    ubuntu_repository:
+      hosts:
+        sea0020sdp01.frontedge.net:
+          ansible_host: sea0020sdp01.frontedge.net
+
+    oracle_repository:
+      hosts:
+        sea0020sdp02.frontedge.net:
+          ansible_host: sea0020sdp02.frontedge.net
+
+    redhat_repository:
+      hosts:
+        sea0020sdp03.frontedge.net:
+          ansible_host: sea0020sdp03.frontedge.net
