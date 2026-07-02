@@ -29,10 +29,10 @@
     - name: Ensure patch directory exists on all hosts
       ansible.builtin.file:
         path: /var/log/ansible/patching
-      state: directory
-      owner: root
-      group: root
-      mode: '0755'
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
 
     - name: Include Ubuntu patch playbook
       include_tasks: ubuntu_patch.yml
