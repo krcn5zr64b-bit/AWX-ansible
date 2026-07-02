@@ -4,6 +4,7 @@ all:
     auto_1_prod:
       hosts:
         sea0020smg15.frontedge.net:
+        sea0020smg14.frontedge.net:
         sea0020sdp01.frontedge.net:
         sea0020sdp03.frontedge.net:
         sea0020smg1.frontedge.net:
