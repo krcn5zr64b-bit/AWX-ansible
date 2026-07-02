@@ -83,16 +83,3 @@
 - name: Show reboot status
   debug:
     msg: "Reboot required = {{ reboot_required }} for {{ inventory_hostname }}"
-
-# -------------------------
-# EMAIL REPORT
-# -------------------------
-
-- name: Send patch report via email (Ubuntu)
-  community.general.mail:
-    host: localhost
-    port: 25
-    to: nico.zanjani@fujitsu.com
-    subject: "Patching report for {{ inventory_hostname }} - {{ patch_type | default('N/A') }}"
-    body: "{{ lookup('file', logfile) }}"
-    from: ansible@ansibleserver.frontedge.net
