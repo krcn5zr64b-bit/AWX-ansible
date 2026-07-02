@@ -2,7 +2,6 @@
 - name: Set logfile for Ubuntu
   set_fact:
     logfile: "{{ log_dir }}/patch_{{ inventory_hostname }}_ubuntu.log"
-  delegate_to: localhost
 
 - name: Update apt cache on Ubuntu
   apt:
@@ -78,7 +77,6 @@
       Reboot required: {{ reboot_required }}
 
     dest: "{{ logfile }}"
-  delegate_to: localhost
 
 # -------------------------
 # DEBUG (OPTIONAL BUT USEFUL)
@@ -100,4 +98,3 @@
     subject: "Patching report for {{ inventory_hostname }} - {{ patch_type | default('N/A') }}"
     body: "{{ lookup('file', logfile) }}"
     from: ansible@ansibleserver.frontedge.net
-  delegate_to: localhost

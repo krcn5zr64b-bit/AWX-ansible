@@ -18,11 +18,7 @@
         owner: root
         group: root
         mode: '0755'
-      delegate_to: localhost
       become: yes
-      become_method: sudo
-      become_user: root
-      connection: local
       run_once: true
 
   # -------------------------
