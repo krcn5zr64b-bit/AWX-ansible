@@ -1,7 +1,7 @@
 all:
   children:
 
-    auto_1_prod:
+    prod_auto_1:
       hosts:
         sea0020smg15.frontedge.net:
         sea0020sdp01.frontedge.net:
@@ -9,7 +9,7 @@ all:
         sea0020smg1.frontedge.net:
         sea0020sns1.frontedge.net:
 
-    auto_2_prod:
+    prod_auto_2:
       hosts:
         sea0020sdp02.frontedge.net:
         sea0020smg2.frontedge.net:

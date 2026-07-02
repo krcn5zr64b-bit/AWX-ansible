@@ -1,10 +1,10 @@
 all:
   children:
 
-    auto_1_test:
+    test_auto_1:
       hosts:
         sea0020smg14.frontedge.net:
 
-    auto_2_test:
+    test_auto_2:
       hosts:
         sea0020smg14.frontedge.net:
