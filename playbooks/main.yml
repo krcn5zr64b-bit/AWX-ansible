@@ -28,7 +28,7 @@
 
     - name: Ensure patch directory exists on all hosts
       ansible.builtin.file:
-      path: /var/log/ansible/patching
+        path: /var/log/ansible/patching
       state: directory
       owner: root
       group: root
