@@ -21,13 +21,11 @@
 
 - name: Run security upgrade on Ubuntu
   shell: unattended-upgrade -d
-  when: (patch_type | default('')) | lower == 'security'
   register: patch_output_security
   ignore_errors: yes
 
 - name: Run full upgrade on Ubuntu
   shell: apt update -y && apt upgrade -y
-  when: (patch_type | default('')) | lower == 'full'
   register: patch_output_full
   ignore_errors: yes
 
@@ -91,7 +89,7 @@
 # -------------------------
 
 - name: Send patch report via email (Ubuntu)
-  ansible.builtin.mail:
+  community.general.mail:
     host: localhost
     port: 25
     to: nico.zanjani@fujitsu.com

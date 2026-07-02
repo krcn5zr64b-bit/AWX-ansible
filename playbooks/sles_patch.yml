@@ -2,7 +2,6 @@
 - name: Set logfile for SLES
   set_fact:
     logfile: "{{ log_dir }}/patch_{{ inventory_hostname }}_sles.log"
-  delegate_to: localhost
 
 # -------------------------
 # PATCHING
@@ -10,13 +9,11 @@
 
 - name: Run security update on SLES
   shell: zypper patch --with-update --type patch -y
-  when: (patch_type | default('') | lower) == 'security'
   register: patch_output_security
   ignore_errors: yes
 
 - name: Run full update on SLES
   shell: zypper update -y
-  when: (patch_type | default('') | lower) != 'security'
   register: patch_output_full
   ignore_errors: yes
 
@@ -77,7 +74,6 @@
       {% endif %}
 
     dest: "{{ logfile }}"
-  delegate_to: localhost
 
 # -------------------------
 # DEBUG (OPTIONAL)
@@ -99,4 +95,3 @@
     subject: "Patching report for {{ inventory_hostname }} - {{ patch_type | default('N/A') }}"
     body: "{{ lookup('file', logfile) }}"
     from: ansible@ansibleserver.frontedge.net
-  delegate_to: localhost
