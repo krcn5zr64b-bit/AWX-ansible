@@ -6,5 +6,6 @@ all:
         sea0020smg14.frontedge.net:
 
     test_auto_2:
-      hosts:
-        sea0020smg14.frontedge.net:
+      hosts: {}
+        #hosts:
+        #sea0020smg14.frontedge.net:
