@@ -20,7 +20,7 @@
 # -------------------------
 
 - name: Run security upgrade on Ubuntu
-  shell: unattended-upgrade -d
+  shell: apt update -y && unattended-upgrade -d
   register: patch_output_security
   ignore_errors: yes
 
