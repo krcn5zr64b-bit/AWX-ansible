@@ -1,24 +1,16 @@
 all:
   children:
 
-    Auto-1-prod:
+    auto_1_prod:
       hosts:
         sea0020sdp01.frontedge.net:
-          ansible_host: sea0020sdp01.frontedge.net
         sea0020sdp03.frontedge.net:
-          ansible_host: sea0020sdp03.frontedge.net
-        webmin.frontedge.net:
-          ansible_host: webmin.frontedge.net
         sea0020smg1.frontedge.net:
-          ansible_host: sea0020smg1.frontedge.net
         sea0020sns1.frontedge.net:
-          ansible_host: sea0020sns1.frontedge.net
 
-    Auto-2-prod:
+    auto_2_prod:
       hosts:
         sea0020sdp02.frontedge.net:
-          ansible_host: sea0020sdp02.frontedge.net
         sea0020smg2.frontedge.net:
-          ansible_host: sea0020smg2.frontedge.net
         sea0020smg3.frontedge.net:
-          ansible_host: sea0020smg3.frontedge.net
+        webmin.frontedge.net:
